@@ -2,6 +2,8 @@
 
 RSC8 is a CHIP-8 virtual machine/emulator written in Rust 🦀
 
+Bilibili video: [BV1HKzNYQEjM](https://www.bilibili.com/video/BV1HKzNYQEjM)
+
 ## How to use
 
 ```bash
