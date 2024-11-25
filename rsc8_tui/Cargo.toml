@@ -1,0 +1,9 @@
+[package]
+name = "rsc8_tui"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rsc8_core = { path = "../rsc8_core" }
+crossterm = "*"
+ratatui = "*"
