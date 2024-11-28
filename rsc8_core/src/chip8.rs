@@ -184,17 +184,17 @@ impl Chip8 {
                 let vy = self.register_v[y as usize] % SCREEN_HEIGHT as u8;
                 self.register_v[0xF] = 0;
                 for rows in 0..n {
-                    let sprite_row = self.memory[(self.register_i + rows as u16) as usize];
                     let screen_y = vy + rows;
                     if screen_y >= SCREEN_HEIGHT as u8 {
                         break;
                     }
+                    let sprite_row = self.memory[(self.register_i + rows as u16) as usize];
                     for cols in 0..8 {
-                        let sprite_pixel = (sprite_row & (0b1000_0000 >> cols)) != 0;
                         let screen_x = vx + cols;
                         if screen_x >= SCREEN_WIDTH as u8 {
                             break;
                         }
+                        let sprite_pixel = (sprite_row & (0b1000_0000 >> cols)) != 0;
                         let screen_pixel_index =
                             screen_x as usize + screen_y as usize * SCREEN_WIDTH;
                         let screen_pixel = self.screen[screen_pixel_index];
