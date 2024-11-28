@@ -176,7 +176,7 @@ impl Chip8 {
                 self.program_counter = nnn + self.register_v[0] as u16;
             }
             Instruction::InsCXNN(x, nn) => {
-                let random = self.rng.gen();
+                let random = self.rng.next().unwrap_or_default();
                 self.register_v[x as usize] = random as u8 & nn;
             }
             Instruction::InsDXYN(x, y, n) => {

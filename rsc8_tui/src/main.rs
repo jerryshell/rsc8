@@ -26,7 +26,7 @@ fn main() -> io::Result<()> {
 }
 
 fn run(mut terminal: DefaultTerminal) -> io::Result<()> {
-    // Init Chip8
+    // Init chip8
     let mut chip8 = chip8::Chip8::default();
 
     // Try set random seed
@@ -34,7 +34,7 @@ fn run(mut terminal: DefaultTerminal) -> io::Result<()> {
         chip8.rng.seed = unix_timestamp.as_millis() as u16;
     }
 
-    // Load Fontset
+    // Load fontset
     chip8.load_fontset();
 
     // Load rom
