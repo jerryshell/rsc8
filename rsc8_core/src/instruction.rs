@@ -95,9 +95,9 @@ impl From<u16> for Instruction {
             // DXYN: Draw (8 width * N height) sprite at (VX, VY)
             0xD => Instruction::InsDXYN(nibble2, nibble3, nibble4),
             0xE => match nibble3 {
-                // EX9E: Skip next instruction if key[VX] is pressed
+                // EX9E: Skip next instruction if keypad[VX] is pressed
                 0x9 => Instruction::InsEX9E(nibble2),
-                // EXA1: Skip next instruction if key[VX] is not pressed
+                // EXA1: Skip next instruction if keypad[VX] is not pressed
                 0xA => Instruction::InsEXA1(nibble2),
                 _ => panic!("Unknown opcode: {:04x}", opcode),
             },
