@@ -220,17 +220,15 @@ impl Chip8 {
                 self.register_v[x as usize] = self.delay_timer;
             }
             Instruction::InsFX0A(x) => {
-                let mut any_key_pressed = false;
+                self.wait_for_key_release.0 = false;
                 for (key_code, &key_pressed) in self.keypad.iter().enumerate() {
                     if key_pressed {
-                        any_key_pressed = true;
                         self.wait_for_key_release = (true, key_code);
                         self.register_v[x as usize] = key_code as u8;
                         break;
                     }
                 }
-                if !any_key_pressed {
-                    // Redo
+                if !self.wait_for_key_release.0 {
                     self.program_counter -= 2;
                 }
             }
