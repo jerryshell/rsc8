@@ -7,7 +7,7 @@ Bilibili video: [BV1HKzNYQEjM](https://www.bilibili.com/video/BV1HKzNYQEjM)
 ## How to use
 
 ```bash
-cargo install --git https://github.com/jerryshell/rsc8
+cargo install --locked --git https://github.com/jerryshell/rsc8
 ```
 
 ```bash
@@ -25,7 +25,7 @@ A S D F      7 8 9 E
 Z X C V      A 0 B F
 ```
 
-Press `ESC` to exit
+Press `Esc` to exit
 
 ## Screenshot
 
