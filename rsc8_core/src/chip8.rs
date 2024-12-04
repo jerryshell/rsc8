@@ -69,19 +69,28 @@ impl Chip8 {
     }
 
     pub fn tick(&mut self) {
-        // Fetch opcode
-        let opcode1 = self.memory[self.program_counter as usize];
-        let opcode2 = self.memory[self.program_counter as usize + 1];
-        let opcode = (opcode1 as u16) << 8 | opcode2 as u16;
+        let opcode = self.fetch_opcode();
+        let instruction = Instruction::from(opcode);
+        self.execute_instruction(&instruction);
+    }
+
+    pub fn tick_timer(&mut self) {
+        self.delay_timer = self.delay_timer.saturating_sub(1);
+        self.sound_timer = self.sound_timer.saturating_sub(1);
+    }
+
+    pub fn fetch_opcode(&mut self) -> u16 {
+        let high_byte = self.memory[self.program_counter as usize];
+        let low_byte = self.memory[self.program_counter as usize + 1];
 
         // Increment program counter
         self.program_counter += 2;
 
-        // Decode opcode
-        let instruction = Instruction::from(opcode);
+        (high_byte as u16) << 8 | low_byte as u16
+    }
 
-        // Execute instruction
-        match instruction {
+    pub fn execute_instruction(&mut self, instruction: &Instruction) {
+        match *instruction {
             Instruction::Ins00E0 => {
                 self.screen = [false; SCREEN_WIDTH * SCREEN_HEIGHT];
                 self.draw_flag = true;
@@ -267,10 +276,5 @@ impl Chip8 {
                 self.register_i += x as u16 + 1;
             }
         }
-    }
-
-    pub fn tick_timer(&mut self) {
-        self.delay_timer = self.delay_timer.saturating_sub(1);
-        self.sound_timer = self.sound_timer.saturating_sub(1);
     }
 }
