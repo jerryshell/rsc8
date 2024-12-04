@@ -53,7 +53,7 @@ impl Default for Chip8 {
             keypad: [false; 16],
             screen: [false; SCREEN_WIDTH * SCREEN_HEIGHT],
             draw_flag: false,
-            rng: SimpleRng::new(996),
+            rng: SimpleRng::default(),
             wait_for_key_release: (false, 0),
         }
     }
