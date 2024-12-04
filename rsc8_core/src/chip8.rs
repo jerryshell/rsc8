@@ -68,10 +68,11 @@ impl Chip8 {
         self.memory[512..(buffer.len() + 512)].copy_from_slice(buffer);
     }
 
-    pub fn tick(&mut self) {
+    pub fn tick(&mut self) -> Result<(), InstructionError> {
         let opcode = self.fetch_opcode();
-        let instruction = Instruction::from(opcode);
+        let instruction = Instruction::try_from(opcode)?;
         self.execute_instruction(&instruction);
+        Ok(())
     }
 
     pub fn tick_timer(&mut self) {

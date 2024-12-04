@@ -8,8 +8,9 @@ use ratatui::{
 use rsc8_core::chip8;
 use std::{
     env::args,
+    error,
     fs::File,
-    io::{self, Read},
+    io::Read,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
@@ -17,15 +18,15 @@ const FRAME_RATE: u64 = 60;
 const KEYPAD_RESET_COUNTDOWN_INIT: u64 = 10;
 const TICK_PER_FRAME: u8 = 8;
 
-fn main() -> io::Result<()> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut terminal = ratatui::init();
-    terminal.clear()?;
-    let app_result = run(terminal);
+    terminal.clear().unwrap();
+    let result = run(terminal);
     ratatui::restore();
-    app_result
+    result
 }
 
-fn run(mut terminal: DefaultTerminal) -> io::Result<()> {
+fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn error::Error>> {
     // Init chip8
     let mut chip8 = chip8::Chip8::default();
 
@@ -39,7 +40,7 @@ fn run(mut terminal: DefaultTerminal) -> io::Result<()> {
 
     // Load rom
     {
-        let filename = args().nth(1).expect("Usage: rsc8_tui <your_rom.ch8>");
+        let filename = args().nth(1).ok_or("Usage: rsc8_tui <your_rom.ch8>")?;
         let mut f = File::open(filename)?;
         let mut buffer = Vec::new();
         f.read_to_end(&mut buffer)?;
@@ -57,7 +58,7 @@ fn run(mut terminal: DefaultTerminal) -> io::Result<()> {
             if chip8.wait_for_key_release.0 {
                 break;
             }
-            chip8.tick();
+            chip8.tick()?;
         }
 
         // Tick timer
