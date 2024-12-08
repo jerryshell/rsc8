@@ -1,13 +1,14 @@
 use crate::{instruction::*, simple_rng::*};
 
-pub const SCREEN_WIDTH: usize = 64;
-pub const SCREEN_HEIGHT: usize = 32;
 pub const MEMORY_SIZE: usize = 4096;
 pub const PROGRAM_START: u16 = 0x200;
+pub const NUM_REGISTERS: usize = 16;
 pub const FONTSET_START: usize = 0;
 pub const FONTSET_SIZE: usize = 80;
-pub const NUM_REGISTERS: usize = 16;
 pub const STACK_SIZE: usize = 16;
+pub const KEYPAD_SIZE: usize = 16;
+pub const SCREEN_WIDTH: usize = 64;
+pub const SCREEN_HEIGHT: usize = 32;
 
 const FONTSET: [u8; FONTSET_SIZE] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -28,6 +29,9 @@ const FONTSET: [u8; FONTSET_SIZE] = [
     0xF0, 0x80, 0xF0, 0x80, 0x80, // F
 ];
 
+type WaitForKeyFlag = bool;
+type WaitForKeyCode = usize;
+
 #[repr(C)]
 pub struct Chip8 {
     pub memory: [u8; MEMORY_SIZE],
@@ -38,11 +42,11 @@ pub struct Chip8 {
     pub sound_timer: u8,
     pub stack: [u16; STACK_SIZE],
     pub stack_pointer: u8,
-    pub keypad: [bool; 16],
+    pub keypad: [bool; KEYPAD_SIZE],
     pub screen: [bool; SCREEN_WIDTH * SCREEN_HEIGHT],
     pub draw_flag: bool,
     pub rng: SimpleRng,
-    pub wait_for_key_release: (bool, usize),
+    pub wait_for_key_release: (WaitForKeyFlag, WaitForKeyCode),
 }
 
 impl Default for Chip8 {
@@ -67,7 +71,7 @@ impl Default for Chip8 {
 
 impl Chip8 {
     pub fn load_fontset(&mut self) {
-        self.memory[0..FONTSET.len()].copy_from_slice(&FONTSET);
+        self.memory[..FONTSET.len()].copy_from_slice(&FONTSET);
     }
 
     pub fn load_rom(&mut self, buffer: &[u8]) {
