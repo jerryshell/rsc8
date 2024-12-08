@@ -35,13 +35,29 @@ pub enum Instruction {
     InsFX65(u8),
 }
 
+impl Instruction {
+    fn get_nibbles(opcode: u16) -> (u8, u8, u8, u8) {
+        (
+            ((opcode & 0xF000) >> 12) as u8,
+            ((opcode & 0x0F00) >> 8) as u8,
+            ((opcode & 0x00F0) >> 4) as u8,
+            (opcode & 0x000F) as u8,
+        )
+    }
+
+    fn get_nnn(opcode: u16) -> u16 {
+        opcode & 0x0FFF
+    }
+
+    fn get_nn(opcode: u16) -> u8 {
+        (opcode & 0x00FF) as u8
+    }
+}
+
 impl TryFrom<u16> for Instruction {
     type Error = InstructionError;
     fn try_from(opcode: u16) -> Result<Instruction, InstructionError> {
-        let nibble1 = ((opcode & 0xF000) >> 12) as u8;
-        let nibble2 = ((opcode & 0x0F00) >> 8) as u8;
-        let nibble3 = ((opcode & 0x00F0) >> 4) as u8;
-        let nibble4 = (opcode & 0x000F) as u8;
+        let (nibble1, nibble2, nibble3, nibble4) = Instruction::get_nibbles(opcode);
         match nibble1 {
             0x0 => match nibble4 {
                 // 00E0: Clear screen
@@ -51,19 +67,19 @@ impl TryFrom<u16> for Instruction {
                 _ => Err(InstructionError::UnknownOpcode(opcode)),
             },
             // 1NNN: Jump to NNN
-            0x1 => Ok(Instruction::Ins1NNN(opcode & 0x0FFF)),
+            0x1 => Ok(Instruction::Ins1NNN(Instruction::get_nnn(opcode))),
             // 2NNN: Call subroutine at NNN
-            0x2 => Ok(Instruction::Ins2NNN(opcode & 0x0FFF)),
+            0x2 => Ok(Instruction::Ins2NNN(Instruction::get_nnn(opcode))),
             // 3XNN: Skip next instruction if VX == NN
-            0x3 => Ok(Instruction::Ins3XNN(nibble2, (opcode & 0x00FF) as u8)),
+            0x3 => Ok(Instruction::Ins3XNN(nibble2, Instruction::get_nn(opcode))),
             // 4XNN: Skip next instruction if VX != NN
-            0x4 => Ok(Instruction::Ins4XNN(nibble2, (opcode & 0x00FF) as u8)),
+            0x4 => Ok(Instruction::Ins4XNN(nibble2, Instruction::get_nn(opcode))),
             // 5XY0: Skip next instruction if VX == VY
             0x5 => Ok(Instruction::Ins5XY0(nibble2, nibble3)),
             // 6XNN: VX = NN
-            0x6 => Ok(Instruction::Ins6XNN(nibble2, (opcode & 0x00FF) as u8)),
+            0x6 => Ok(Instruction::Ins6XNN(nibble2, Instruction::get_nn(opcode))),
             // 7XNN: VX += NN
-            0x7 => Ok(Instruction::Ins7XNN(nibble2, (opcode & 0x00FF) as u8)),
+            0x7 => Ok(Instruction::Ins7XNN(nibble2, Instruction::get_nn(opcode))),
             0x8 => match nibble4 {
                 // 8XY0: VX = VY
                 0x0 => Ok(Instruction::Ins8XY0(nibble2, nibble3)),
@@ -88,11 +104,11 @@ impl TryFrom<u16> for Instruction {
             // 9XY0: Skip next instruction if VX != VY
             0x9 => Ok(Instruction::Ins9XY0(nibble2, nibble3)),
             // ANNN: I = NNN
-            0xA => Ok(Instruction::InsANNN(opcode & 0x0FFF)),
+            0xA => Ok(Instruction::InsANNN(Instruction::get_nnn(opcode))),
             // BNNN: Jump to NNN + V0
-            0xB => Ok(Instruction::InsBNNN(opcode & 0x0FFF)),
+            0xB => Ok(Instruction::InsBNNN(Instruction::get_nnn(opcode))),
             // CXNN: VX = rand() & NN
-            0xC => Ok(Instruction::InsCXNN(nibble2, (opcode & 0x00FF) as u8)),
+            0xC => Ok(Instruction::InsCXNN(nibble2, Instruction::get_nn(opcode))),
             // DXYN: Draw (8 width * N height) sprite at (VX, VY)
             0xD => Ok(Instruction::InsDXYN(nibble2, nibble3, nibble4)),
             0xE => match nibble3 {
