@@ -74,9 +74,9 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn error::Error>> {
             chip8.draw_flag = false;
             terminal.draw(|frame| {
                 chip8.screen.iter().enumerate().for_each(|(index, pixel)| {
-                    let x = (index % chip8::SCREEN_WIDTH) as u16;
-                    let y = (index / chip8::SCREEN_WIDTH) as u16;
                     if *pixel {
+                        let x = (index % chip8::SCREEN_WIDTH) as u16;
+                        let y = (index / chip8::SCREEN_WIDTH) as u16;
                         let area = Rect::new(x * 2, y, 2, 1);
                         let block = Block::default().style(Style::new().on_white());
                         frame.render_widget(block, area);
