@@ -2,8 +2,14 @@ use crate::{instruction::*, simple_rng::*};
 
 pub const SCREEN_WIDTH: usize = 64;
 pub const SCREEN_HEIGHT: usize = 32;
+pub const MEMORY_SIZE: usize = 4096;
+pub const PROGRAM_START: u16 = 0x200;
+pub const FONTSET_START: usize = 0;
+pub const FONTSET_SIZE: usize = 80;
+pub const NUM_REGISTERS: usize = 16;
+pub const STACK_SIZE: usize = 16;
 
-const FONTSET: [u8; 80] = [
+const FONTSET: [u8; FONTSET_SIZE] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
     0x20, 0x60, 0x20, 0x20, 0x70, // 1
     0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
@@ -24,13 +30,13 @@ const FONTSET: [u8; 80] = [
 
 #[repr(C)]
 pub struct Chip8 {
-    pub memory: [u8; 4096],
+    pub memory: [u8; MEMORY_SIZE],
     pub program_counter: u16,
-    pub register_v: [u8; 16],
+    pub register_v: [u8; NUM_REGISTERS],
     pub register_i: u16,
     pub delay_timer: u8,
     pub sound_timer: u8,
-    pub stack: [u16; 16],
+    pub stack: [u16; STACK_SIZE],
     pub stack_pointer: u8,
     pub keypad: [bool; 16],
     pub screen: [bool; SCREEN_WIDTH * SCREEN_HEIGHT],
@@ -42,13 +48,13 @@ pub struct Chip8 {
 impl Default for Chip8 {
     fn default() -> Self {
         Self {
-            memory: [0; 4096],
-            program_counter: 0x200,
-            register_v: [0; 16],
+            memory: [0; MEMORY_SIZE],
+            program_counter: PROGRAM_START,
+            register_v: [0; NUM_REGISTERS],
             register_i: 0,
             delay_timer: 0,
             sound_timer: 0,
-            stack: [0; 16],
+            stack: [0; STACK_SIZE],
             stack_pointer: 0,
             keypad: [false; 16],
             screen: [false; SCREEN_WIDTH * SCREEN_HEIGHT],
@@ -193,18 +199,18 @@ impl Chip8 {
                 let vx = self.register_v[x as usize] % SCREEN_WIDTH as u8;
                 let vy = self.register_v[y as usize] % SCREEN_HEIGHT as u8;
                 self.register_v[0xF] = 0;
-                for rows in 0..n {
-                    let screen_y = vy + rows;
+                for row in 0..n {
+                    let screen_y = vy + row;
                     if screen_y >= SCREEN_HEIGHT as u8 {
                         break;
                     }
-                    let sprite_row = self.memory[(self.register_i + rows as u16) as usize];
-                    for cols in 0..8 {
-                        let screen_x = vx + cols;
+                    let sprite_row = self.memory[(self.register_i + row as u16) as usize];
+                    for col in 0..8 {
+                        let screen_x = vx + col;
                         if screen_x >= SCREEN_WIDTH as u8 {
                             break;
                         }
-                        let sprite_pixel = (sprite_row & (0b1000_0000 >> cols)) != 0;
+                        let sprite_pixel = (sprite_row & (0b1000_0000 >> col)) != 0;
                         let screen_pixel_index =
                             screen_x as usize + screen_y as usize * SCREEN_WIDTH;
                         let screen_pixel = self.screen[screen_pixel_index];
