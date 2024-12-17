@@ -2,17 +2,17 @@ const DEFAULT_SEED: u16 = 996;
 const LCG_A: u16 = 75;
 const LCG_C: u16 = 74;
 
-pub struct SimpleRng {
+pub struct LinearCongruentialGenerator {
     pub seed: u16,
 }
 
-impl Default for SimpleRng {
+impl Default for LinearCongruentialGenerator {
     fn default() -> Self {
         Self { seed: DEFAULT_SEED }
     }
 }
 
-impl Iterator for SimpleRng {
+impl Iterator for LinearCongruentialGenerator {
     type Item = u16;
 
     fn next(&mut self) -> Option<Self::Item> {

@@ -1,4 +1,7 @@
-use crate::{instruction::*, simple_rng::*};
+use crate::{
+    instruction::{Instruction, InstructionError},
+    rng::LinearCongruentialGenerator,
+};
 
 pub const MEMORY_SIZE: usize = 4096;
 pub const PROGRAM_START: u16 = 0x200;
@@ -45,7 +48,7 @@ pub struct Chip8 {
     pub keypad: [bool; KEYPAD_SIZE],
     pub screen: [bool; SCREEN_WIDTH * SCREEN_HEIGHT],
     pub draw_flag: bool,
-    pub rng: SimpleRng,
+    pub rng: LinearCongruentialGenerator,
     pub wait_for_key_release: (WaitForKeyFlag, WaitForKeyCode),
 }
 
@@ -63,7 +66,7 @@ impl Default for Chip8 {
             keypad: [false; 16],
             screen: [false; SCREEN_WIDTH * SCREEN_HEIGHT],
             draw_flag: false,
-            rng: SimpleRng::default(),
+            rng: LinearCongruentialGenerator::default(),
             wait_for_key_release: (false, 0),
         }
     }
