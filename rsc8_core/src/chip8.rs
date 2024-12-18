@@ -32,9 +32,6 @@ const FONTSET: [u8; FONTSET_SIZE] = [
     0xF0, 0x80, 0xF0, 0x80, 0x80, // F
 ];
 
-type WaitForKeyFlag = bool;
-type WaitForKeyCode = usize;
-
 #[repr(C)]
 pub struct Chip8 {
     pub memory: [u8; MEMORY_SIZE],
@@ -49,7 +46,7 @@ pub struct Chip8 {
     pub screen: [bool; SCREEN_WIDTH * SCREEN_HEIGHT],
     pub draw_flag: bool,
     pub rng: LinearCongruentialGenerator,
-    pub wait_for_key_release: (WaitForKeyFlag, WaitForKeyCode),
+    pub wait_for_key_release: Option<usize>,
 }
 
 impl Default for Chip8 {
@@ -67,7 +64,7 @@ impl Default for Chip8 {
             screen: [false; SCREEN_WIDTH * SCREEN_HEIGHT],
             draw_flag: false,
             rng: LinearCongruentialGenerator::default(),
-            wait_for_key_release: (false, 0),
+            wait_for_key_release: None,
         }
     }
 }
@@ -243,15 +240,16 @@ impl Chip8 {
                 self.register_v[x as usize] = self.delay_timer;
             }
             Instruction::InsFX0A(x) => {
-                self.wait_for_key_release.0 = false;
+                let mut any_key_pressed = false;
                 for (key_code, &key_pressed) in self.keypad.iter().enumerate() {
                     if key_pressed {
-                        self.wait_for_key_release = (true, key_code);
+                        any_key_pressed = true;
+                        self.wait_for_key_release = Some(key_code);
                         self.register_v[x as usize] = key_code as u8;
                         break;
                     }
                 }
-                if !self.wait_for_key_release.0 {
+                if !any_key_pressed {
                     self.program_counter -= 2;
                 }
             }

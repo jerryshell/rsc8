@@ -55,7 +55,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn error::Error>> {
     loop {
         // Tick
         for _ in 0..TICK_PER_FRAME {
-            if chip8.wait_for_key_release.0 {
+            if chip8.wait_for_key_release.is_some() {
                 break;
             }
             chip8.tick()?;
@@ -98,8 +98,10 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn error::Error>> {
                         KeyEventKind::Press => chip8.keypad[chip8_key_code] = true,
                         KeyEventKind::Release => {
                             chip8.keypad[chip8_key_code] = false;
-                            if chip8_key_code == chip8.wait_for_key_release.1 {
-                                chip8.wait_for_key_release.0 = false;
+                            if let Some(key_code) = chip8.wait_for_key_release {
+                                if chip8_key_code == key_code {
+                                    chip8.wait_for_key_release = None;
+                                }
                             }
                         }
                         _ => {}
@@ -111,9 +113,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn error::Error>> {
             if keypad_reset_countdown == 0 {
                 keypad_reset_countdown = KEYPAD_RESET_COUNTDOWN_INIT;
                 chip8.keypad.iter_mut().for_each(|pressed| *pressed = false);
-                if chip8.wait_for_key_release.0 {
-                    chip8.wait_for_key_release.0 = false;
-                }
+                chip8.wait_for_key_release = None;
             }
         }
 
