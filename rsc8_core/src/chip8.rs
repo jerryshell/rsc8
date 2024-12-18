@@ -1,7 +1,4 @@
-use crate::{
-    instruction::{Instruction, InstructionError},
-    rng::LinearCongruentialGenerator,
-};
+use crate::{error::InstructionError, instruction::Instruction, rng::LinearCongruentialGenerator};
 
 pub const MEMORY_SIZE: usize = 4096;
 pub const PROGRAM_START: u16 = 0x200;

@@ -1,3 +1,5 @@
+use crate::error::InstructionError;
+
 pub enum Instruction {
     Ins00E0,
     Ins00EE,
@@ -149,25 +151,3 @@ impl TryFrom<u16> for Instruction {
         }
     }
 }
-
-pub enum InstructionError {
-    UnknownOpcode(u16),
-}
-
-impl core::fmt::Display for InstructionError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            InstructionError::UnknownOpcode(opcode) => write!(f, "Unknown opcode: {:04x}", opcode),
-        }
-    }
-}
-
-impl core::fmt::Debug for InstructionError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            InstructionError::UnknownOpcode(opcode) => write!(f, "Unknown opcode: {:04x}", opcode),
-        }
-    }
-}
-
-impl core::error::Error for InstructionError {}
