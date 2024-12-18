@@ -17,6 +17,24 @@ use std::{
 const FRAME_RATE: u64 = 60;
 const KEYPAD_RESET_COUNTDOWN_INIT: u64 = 10;
 const TICK_PER_FRAME: u8 = 8;
+const KEY_MAP: [(char, usize); 16] = [
+    ('1', 0x1),
+    ('2', 0x2),
+    ('3', 0x3),
+    ('4', 0xC),
+    ('q', 0x4),
+    ('w', 0x5),
+    ('e', 0x6),
+    ('r', 0xD),
+    ('a', 0x7),
+    ('s', 0x8),
+    ('d', 0x9),
+    ('f', 0xE),
+    ('z', 0xA),
+    ('x', 0x0),
+    ('c', 0xB),
+    ('v', 0xF),
+];
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut terminal = ratatui::init();
@@ -123,23 +141,12 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn error::Error>> {
 }
 
 fn pc_key_code_to_chip8_key_code(key_code: &KeyCode) -> Option<usize> {
-    match key_code {
-        KeyCode::Char('1') => Some(0x1),
-        KeyCode::Char('2') => Some(0x2),
-        KeyCode::Char('3') => Some(0x3),
-        KeyCode::Char('4') => Some(0xC),
-        KeyCode::Char('q') => Some(0x4),
-        KeyCode::Char('w') => Some(0x5),
-        KeyCode::Char('e') => Some(0x6),
-        KeyCode::Char('r') => Some(0xD),
-        KeyCode::Char('a') => Some(0x7),
-        KeyCode::Char('s') => Some(0x8),
-        KeyCode::Char('d') => Some(0x9),
-        KeyCode::Char('f') => Some(0xE),
-        KeyCode::Char('z') => Some(0xA),
-        KeyCode::Char('x') => Some(0x0),
-        KeyCode::Char('c') => Some(0xB),
-        KeyCode::Char('v') => Some(0xF),
-        _ => None,
+    if let KeyCode::Char(c) = key_code {
+        KEY_MAP
+            .iter()
+            .find(|(key, _)| key == c)
+            .map(|(_, code)| *code)
+    } else {
+        None
     }
 }
