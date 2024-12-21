@@ -108,7 +108,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn error::Error>> {
         if event::poll(timeout)? {
             keypad_reset_countdown = KEYPAD_RESET_COUNTDOWN_INIT;
             if let event::Event::Key(key_event) = event::read()? {
-                if key_event.code == KeyCode::Esc && key_event.kind == KeyEventKind::Press {
+                if key_event.code == KeyCode::Esc {
                     return Ok(());
                 }
                 if let Some(chip8_key_code) = pc_key_code_to_chip8_key_code(&key_event.code) {
