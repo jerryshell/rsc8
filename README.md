@@ -1,6 +1,6 @@
 # RSC8
 
-RSC8 is a CHIP-8 virtual machine/emulator written in Rust 🦀
+_RSC8_ is a CHIP-8 virtual machine/emulator written in Rust 🦀 with **no_std** core
 
 Bilibili video: [BV1HKzNYQEjM](https://www.bilibili.com/video/BV1HKzNYQEjM)
 
