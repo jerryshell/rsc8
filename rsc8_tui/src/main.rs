@@ -1,14 +1,17 @@
 use ratatui::{
-    crossterm::event::{self, KeyCode, KeyEventKind},
+    crossterm::event,
     layout::Rect,
     style::{Style, Stylize},
     widgets::Block,
     DefaultTerminal,
 };
-use rsc8_core::chip8;
+use rsc8_core::{
+    chip8::{Chip8, SCREEN_WIDTH},
+    rng::LinearCongruentialGenerator,
+};
 use std::{
     env::args,
-    error,
+    error::Error,
     fs::File,
     io::Read,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
@@ -36,7 +39,7 @@ const KEY_MAP: [(char, usize); 16] = [
     ('v', 0xF),
 ];
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     let mut terminal = ratatui::init();
     terminal.clear().unwrap();
     let result = run(terminal);
@@ -44,14 +47,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     result
 }
 
-fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn error::Error>> {
-    // Init chip8
-    let mut chip8 = chip8::Chip8::default();
+fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn Error>> {
+    // Init rng
+    let rng = match SystemTime::now().duration_since(UNIX_EPOCH) {
+        Ok(unix_timestamp) => LinearCongruentialGenerator {
+            seed: unix_timestamp.as_millis() as u16,
+        },
+        Err(_) => LinearCongruentialGenerator::default(),
+    };
 
-    // Try set random seed
-    if let Ok(unix_timestamp) = SystemTime::now().duration_since(UNIX_EPOCH) {
-        chip8.rng.seed = unix_timestamp.as_millis() as u16;
-    }
+    // Init chip8
+    let mut chip8 = Chip8::new(rng);
 
     // Load fontset
     chip8.load_fontset();
@@ -93,8 +99,8 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn error::Error>> {
             terminal.draw(|frame| {
                 chip8.screen.iter().enumerate().for_each(|(index, pixel)| {
                     if *pixel {
-                        let x = (index % chip8::SCREEN_WIDTH) as u16;
-                        let y = (index / chip8::SCREEN_WIDTH) as u16;
+                        let x = (index % SCREEN_WIDTH) as u16;
+                        let y = (index / SCREEN_WIDTH) as u16;
                         let area = Rect::new(x * 2, y, 2, 1);
                         let block = Block::default().style(Style::new().on_white());
                         frame.render_widget(block, area);
@@ -108,13 +114,13 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn error::Error>> {
         if event::poll(timeout)? {
             keypad_reset_countdown = KEYPAD_RESET_COUNTDOWN_INIT;
             if let event::Event::Key(key_event) = event::read()? {
-                if key_event.code == KeyCode::Esc {
+                if key_event.code == event::KeyCode::Esc {
                     return Ok(());
                 }
                 if let Some(chip8_key_code) = pc_key_code_to_chip8_key_code(&key_event.code) {
                     match key_event.kind {
-                        KeyEventKind::Press => chip8.keypad[chip8_key_code] = true,
-                        KeyEventKind::Release => {
+                        event::KeyEventKind::Press => chip8.keypad[chip8_key_code] = true,
+                        event::KeyEventKind::Release => {
                             chip8.keypad[chip8_key_code] = false;
                             if let Some(key_code) = chip8.wait_for_key_release {
                                 if chip8_key_code == key_code {
@@ -122,7 +128,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn error::Error>> {
                                 }
                             }
                         }
-                        KeyEventKind::Repeat => {}
+                        event::KeyEventKind::Repeat => {}
                     }
                 }
             }
@@ -140,8 +146,8 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn error::Error>> {
     }
 }
 
-fn pc_key_code_to_chip8_key_code(key_code: &KeyCode) -> Option<usize> {
-    if let KeyCode::Char(c) = key_code {
+fn pc_key_code_to_chip8_key_code(key_code: &event::KeyCode) -> Option<usize> {
+    if let event::KeyCode::Char(c) = key_code {
         KEY_MAP
             .iter()
             .find(|(key, _)| key == c)

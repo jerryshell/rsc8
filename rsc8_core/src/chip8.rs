@@ -1,4 +1,4 @@
-use crate::{error::InstructionError, instruction::Instruction, rng::LinearCongruentialGenerator};
+use crate::{error::InstructionError, instruction::Instruction};
 
 pub const MEMORY_SIZE: usize = 4096;
 pub const PROGRAM_START: u16 = 0x200;
@@ -30,7 +30,7 @@ const FONTSET: [u8; FONTSET_SIZE] = [
 ];
 
 #[repr(C)]
-pub struct Chip8 {
+pub struct Chip8<R: Iterator<Item = u16>> {
     pub memory: [u8; MEMORY_SIZE],
     pub program_counter: u16,
     pub register_v: [u8; NUM_REGISTERS],
@@ -42,12 +42,12 @@ pub struct Chip8 {
     pub keypad: [bool; KEYPAD_SIZE],
     pub screen: [bool; SCREEN_WIDTH * SCREEN_HEIGHT],
     pub draw_flag: bool,
-    pub rng: LinearCongruentialGenerator,
+    pub rng: R,
     pub wait_for_key_release: Option<usize>,
 }
 
-impl Default for Chip8 {
-    fn default() -> Self {
+impl<R: Iterator<Item = u16>> Chip8<R> {
+    pub fn new(rng: R) -> Self {
         Self {
             memory: [0; MEMORY_SIZE],
             program_counter: PROGRAM_START,
@@ -60,13 +60,11 @@ impl Default for Chip8 {
             keypad: [false; 16],
             screen: [false; SCREEN_WIDTH * SCREEN_HEIGHT],
             draw_flag: false,
-            rng: LinearCongruentialGenerator::default(),
+            rng,
             wait_for_key_release: None,
         }
     }
-}
 
-impl Chip8 {
     pub fn load_fontset(&mut self) {
         self.memory[..FONTSET.len()].copy_from_slice(&FONTSET);
     }
