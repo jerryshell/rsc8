@@ -30,7 +30,10 @@ const FONTSET: [u8; FONTSET_SIZE] = [
 ];
 
 #[repr(C)]
-pub struct Chip8<R: Iterator<Item = u16>> {
+pub struct Chip8<R>
+where
+    R: Iterator<Item = u16>,
+{
     pub memory: [u8; MEMORY_SIZE],
     pub program_counter: u16,
     pub register_v: [u8; NUM_REGISTERS],
@@ -46,7 +49,10 @@ pub struct Chip8<R: Iterator<Item = u16>> {
     pub wait_for_key_release: Option<usize>,
 }
 
-impl<R: Iterator<Item = u16>> Chip8<R> {
+impl<R> Chip8<R>
+where
+    R: Iterator<Item = u16>,
+{
     pub fn new(rng: R) -> Self {
         Self {
             memory: [0; MEMORY_SIZE],
