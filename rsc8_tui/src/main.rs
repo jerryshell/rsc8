@@ -122,7 +122,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn error::Error>> {
                                 }
                             }
                         }
-                        _ => {}
+                        KeyEventKind::Repeat => {}
                     }
                 }
             }
