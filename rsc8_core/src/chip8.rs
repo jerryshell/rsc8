@@ -2,6 +2,7 @@ use crate::{error::InstructionError, instruction::Instruction};
 
 pub const MEMORY_SIZE: usize = 4096;
 pub const PROGRAM_START: u16 = 0x200;
+pub const ROM_START: usize = 512;
 pub const NUM_REGISTERS: usize = 16;
 pub const FONTSET_START: usize = 0;
 pub const FONTSET_SIZE: usize = 80;
@@ -76,7 +77,8 @@ where
     }
 
     pub fn load_rom(&mut self, buffer: &[u8]) {
-        self.memory[512..(buffer.len() + 512)].copy_from_slice(buffer);
+        let rom_end = ROM_START + buffer.len();
+        self.memory[ROM_START..rom_end].copy_from_slice(buffer);
     }
 
     pub fn tick(&mut self) -> Result<(), InstructionError> {
