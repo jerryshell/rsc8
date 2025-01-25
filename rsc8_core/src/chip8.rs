@@ -64,7 +64,7 @@ where
             sound_timer: 0,
             stack: [0; STACK_SIZE],
             stack_pointer: 0,
-            keypad: [false; 16],
+            keypad: [false; KEYPAD_SIZE],
             screen: [false; SCREEN_WIDTH * SCREEN_HEIGHT],
             draw_flag: false,
             rng,
