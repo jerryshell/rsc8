@@ -1,15 +1,15 @@
 use crate::{error::InstructionError, instruction::Instruction};
 
 pub const MEMORY_SIZE: usize = 4096;
-pub const PROGRAM_START: u16 = 0x200;
-pub const ROM_START: usize = 512;
 pub const NUM_REGISTERS: usize = 16;
-pub const FONTSET_START: usize = 0;
-pub const FONTSET_SIZE: usize = 80;
 pub const STACK_SIZE: usize = 16;
 pub const KEYPAD_SIZE: usize = 16;
 pub const SCREEN_WIDTH: usize = 64;
 pub const SCREEN_HEIGHT: usize = 32;
+pub const PROGRAM_START: u16 = 0x200;
+pub const ROM_START: usize = 512;
+pub const FONTSET_START: usize = 0;
+pub const FONTSET_SIZE: usize = 80;
 
 const FONTSET: [u8; FONTSET_SIZE] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -30,7 +30,6 @@ const FONTSET: [u8; FONTSET_SIZE] = [
     0xF0, 0x80, 0xF0, 0x80, 0x80, // F
 ];
 
-#[repr(C)]
 pub struct Chip8<R>
 where
     R: Iterator<Item = u16>,
