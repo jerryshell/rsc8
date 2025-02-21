@@ -334,11 +334,11 @@ dependencies = [
 
 [[package]]
 name = "rsc8_core"
-version = "0.1.0"
+version = "0.1.1"
 
 [[package]]
 name = "rsc8_tui"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "crossterm",
  "ratatui",
