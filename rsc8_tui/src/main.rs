@@ -1,9 +1,9 @@
 use ratatui::{
+    DefaultTerminal,
     crossterm::event,
     layout::Rect,
     style::{Style, Stylize},
     widgets::Block,
-    DefaultTerminal,
 };
 use rsc8_core::{
     chip8::{Chip8, SCREEN_WIDTH},
