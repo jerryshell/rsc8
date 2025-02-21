@@ -99,7 +99,7 @@ where
         // Increment program counter
         self.program_counter += 2;
 
-        (high_byte as u16) << 8 | low_byte as u16
+        ((high_byte as u16) << 8) | low_byte as u16
     }
 
     pub fn execute_instruction(&mut self, instruction: &Instruction) {
