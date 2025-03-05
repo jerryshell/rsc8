@@ -1,9 +1,9 @@
 [workspace]
-resolver = "2"
 members = ["rsc8_core", "rsc8_tui"]
+resolver = "3"
 
 [profile.release]
-lto = true
-strip = true
-panic = "abort"
 codegen-units = 1
+lto = true
+panic = "abort"
+strip = true
