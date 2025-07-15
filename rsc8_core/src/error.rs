@@ -5,14 +5,14 @@ pub enum InstructionError {
 impl core::fmt::Debug for InstructionError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            InstructionError::UnknownOpcode(opcode) => write!(f, "UnknownOpcode({:04x})", opcode),
+            InstructionError::UnknownOpcode(opcode) => write!(f, "UnknownOpcode({opcode:04x})"),
         }
     }
 }
 
 impl core::fmt::Display for InstructionError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
