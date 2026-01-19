@@ -1,10 +1,4 @@
-use ratatui::{
-    DefaultTerminal,
-    crossterm::event,
-    layout::Rect,
-    style::{Style, Stylize},
-    widgets::Block,
-};
+use ratatui::{DefaultTerminal, crossterm::event, layout::Rect, style::Style, widgets::Block};
 use rsc8_core::{
     chip8::{Chip8, SCREEN_WIDTH},
     rng::LinearCongruentialGenerator,
