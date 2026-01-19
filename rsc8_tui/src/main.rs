@@ -122,10 +122,10 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn Error>> {
                         event::KeyEventKind::Press => chip8.keypad[chip8_key_code] = true,
                         event::KeyEventKind::Release => {
                             chip8.keypad[chip8_key_code] = false;
-                            if let Some(key_code) = chip8.wait_for_key_release {
-                                if chip8_key_code == key_code {
-                                    chip8.wait_for_key_release = None;
-                                }
+                            if let Some(key_code) = chip8.wait_for_key_release
+                                && chip8_key_code == key_code
+                            {
+                                chip8.wait_for_key_release = None;
                             }
                         }
                         event::KeyEventKind::Repeat => {}
