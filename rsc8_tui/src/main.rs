@@ -62,7 +62,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn Error>> {
         let mut f = File::open(filename)?;
         let mut buffer = Vec::new();
         f.read_to_end(&mut buffer)?;
-        chip8.load_rom(&buffer);
+        chip8.load_rom(&buffer)?;
     }
 
     let tick_rate = Duration::from_millis(1000 / FRAME_RATE);

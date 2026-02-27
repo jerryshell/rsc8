@@ -75,16 +75,23 @@ where
         self.memory[..FONTSET.len()].copy_from_slice(&FONTSET);
     }
 
-    pub fn load_rom(&mut self, buffer: &[u8]) {
+    pub fn load_rom(&mut self, buffer: &[u8]) -> Result<(), InstructionError> {
+        let max_size = MEMORY_SIZE - ROM_START;
+        if buffer.len() > max_size {
+            return Err(InstructionError::RomTooLarge {
+                rom_size: buffer.len(),
+                max_size,
+            });
+        }
         let rom_end = ROM_START + buffer.len();
         self.memory[ROM_START..rom_end].copy_from_slice(buffer);
+        Ok(())
     }
 
     pub fn tick(&mut self) -> Result<(), InstructionError> {
-        let opcode = self.fetch_opcode();
+        let opcode = self.fetch_opcode()?;
         let instruction = Instruction::try_from(opcode)?;
-        self.execute_instruction(&instruction);
-        Ok(())
+        self.execute_instruction(&instruction)
     }
 
     pub fn tick_timer(&mut self) {
@@ -92,47 +99,118 @@ where
         self.sound_timer = self.sound_timer.saturating_sub(1);
     }
 
-    pub fn fetch_opcode(&mut self) -> u16 {
-        let high_byte = self.memory[self.program_counter as usize];
-        let low_byte = self.memory[self.program_counter as usize + 1];
+    pub fn fetch_opcode(&mut self) -> Result<u16, InstructionError> {
+        let pc = self.program_counter as usize;
+        if pc + 1 >= MEMORY_SIZE {
+            return Err(InstructionError::ProgramCounterOutOfBounds(
+                self.program_counter,
+            ));
+        }
+        let high_byte = self.memory[pc];
+        let low_byte = self.memory[pc + 1];
 
         // Increment program counter
-        self.program_counter += 2;
+        self.program_counter =
+            self.program_counter
+                .checked_add(2)
+                .ok_or(InstructionError::ProgramCounterOverflow(
+                    self.program_counter,
+                ))?;
 
-        ((high_byte as u16) << 8) | low_byte as u16
+        Ok(((high_byte as u16) << 8) | low_byte as u16)
     }
 
-    pub fn execute_instruction(&mut self, instruction: &Instruction) {
+    fn read_memory(&self, address: usize) -> Result<u8, InstructionError> {
+        self.memory
+            .get(address)
+            .copied()
+            .ok_or(InstructionError::MemoryOutOfBounds(address))
+    }
+
+    fn write_memory(&mut self, address: usize, value: u8) -> Result<(), InstructionError> {
+        if let Some(cell) = self.memory.get_mut(address) {
+            *cell = value;
+            Ok(())
+        } else {
+            Err(InstructionError::MemoryOutOfBounds(address))
+        }
+    }
+
+    fn skip_next_instruction(&mut self) -> Result<(), InstructionError> {
+        self.program_counter =
+            self.program_counter
+                .checked_add(2)
+                .ok_or(InstructionError::ProgramCounterOverflow(
+                    self.program_counter,
+                ))?;
+        Ok(())
+    }
+
+    fn repeat_current_instruction(&mut self) -> Result<(), InstructionError> {
+        self.program_counter = self.program_counter.checked_sub(2).ok_or(
+            InstructionError::ProgramCounterUnderflow(self.program_counter),
+        )?;
+        Ok(())
+    }
+
+    fn push_stack(&mut self, value: u16) -> Result<(), InstructionError> {
+        let stack_index = self.stack_pointer as usize;
+        if stack_index >= STACK_SIZE {
+            return Err(InstructionError::StackOverflow);
+        }
+        self.stack[stack_index] = value;
+        self.stack_pointer += 1;
+        Ok(())
+    }
+
+    fn pop_stack(&mut self) -> Result<u16, InstructionError> {
+        if self.stack_pointer == 0 {
+            return Err(InstructionError::StackUnderflow);
+        }
+        self.stack_pointer -= 1;
+        Ok(self.stack[self.stack_pointer as usize])
+    }
+
+    fn keypad_state_for_register(&self, register_index: u8) -> Result<bool, InstructionError> {
+        let key_index = self.register_v[register_index as usize];
+        if key_index as usize >= KEYPAD_SIZE {
+            return Err(InstructionError::InvalidKeyIndex(key_index));
+        }
+        Ok(self.keypad[key_index as usize])
+    }
+
+    pub fn execute_instruction(
+        &mut self,
+        instruction: &Instruction,
+    ) -> Result<(), InstructionError> {
         match *instruction {
             Instruction::Ins00E0 => {
                 self.screen = [false; SCREEN_WIDTH * SCREEN_HEIGHT];
                 self.draw_flag = true;
             }
             Instruction::Ins00EE => {
-                self.stack_pointer -= 1;
-                self.program_counter = self.stack[self.stack_pointer as usize];
+                self.program_counter = self.pop_stack()?;
             }
             Instruction::Ins1NNN(nnn) => {
                 self.program_counter = nnn;
             }
             Instruction::Ins2NNN(nnn) => {
-                self.stack[self.stack_pointer as usize] = self.program_counter;
-                self.stack_pointer += 1;
+                self.push_stack(self.program_counter)?;
                 self.program_counter = nnn;
             }
             Instruction::Ins3XNN(x, nn) => {
                 if self.register_v[x as usize] == nn {
-                    self.program_counter += 2;
+                    self.skip_next_instruction()?;
                 }
             }
             Instruction::Ins4XNN(x, nn) => {
                 if self.register_v[x as usize] != nn {
-                    self.program_counter += 2;
+                    self.skip_next_instruction()?;
                 }
             }
             Instruction::Ins5XY0(x, y) => {
                 if self.register_v[x as usize] == self.register_v[y as usize] {
-                    self.program_counter += 2;
+                    self.skip_next_instruction()?;
                 }
             }
             Instruction::Ins6XNN(x, nn) => {
@@ -188,7 +266,7 @@ where
             }
             Instruction::Ins9XY0(x, y) => {
                 if self.register_v[x as usize] != self.register_v[y as usize] {
-                    self.program_counter += 2;
+                    self.skip_next_instruction()?;
                 }
             }
             Instruction::InsANNN(nnn) => {
@@ -210,7 +288,8 @@ where
                     if screen_y >= SCREEN_HEIGHT as u8 {
                         break;
                     }
-                    let sprite_row = self.memory[(self.register_i + row as u16) as usize];
+                    let sprite_address = self.register_i as usize + row as usize;
+                    let sprite_row = self.read_memory(sprite_address)?;
                     for col in 0..8 {
                         let screen_x = vx + col;
                         if screen_x >= SCREEN_WIDTH as u8 {
@@ -229,13 +308,13 @@ where
                 self.draw_flag = true;
             }
             Instruction::InsEX9E(x) => {
-                if self.keypad[self.register_v[x as usize] as usize] {
-                    self.program_counter += 2;
+                if self.keypad_state_for_register(x)? {
+                    self.skip_next_instruction()?;
                 }
             }
             Instruction::InsEXA1(x) => {
-                if !self.keypad[self.register_v[x as usize] as usize] {
-                    self.program_counter += 2;
+                if !self.keypad_state_for_register(x)? {
+                    self.skip_next_instruction()?;
                 }
             }
             Instruction::InsFX07(x) => {
@@ -252,7 +331,7 @@ where
                     }
                 }
                 if !any_key_pressed {
-                    self.program_counter -= 2;
+                    self.repeat_current_instruction()?;
                 }
             }
             Instruction::InsFX15(x) => {
@@ -262,7 +341,9 @@ where
                 self.sound_timer = self.register_v[x as usize];
             }
             Instruction::InsFX1E(x) => {
-                self.register_i += self.register_v[x as usize] as u16;
+                self.register_i = self
+                    .register_i
+                    .wrapping_add(self.register_v[x as usize] as u16);
             }
             Instruction::InsFX29(x) => {
                 self.register_i = (self.register_v[x as usize] * 5) as u16;
@@ -271,24 +352,99 @@ where
                 let hundreds = self.register_v[x as usize] / 100;
                 let tens = (self.register_v[x as usize] / 10) % 10;
                 let ones = self.register_v[x as usize] % 10;
-                self.memory[self.register_i as usize] = hundreds;
-                self.memory[(self.register_i + 1) as usize] = tens;
-                self.memory[(self.register_i + 2) as usize] = ones;
+                self.write_memory(self.register_i as usize, hundreds)?;
+                self.write_memory(self.register_i as usize + 1, tens)?;
+                self.write_memory(self.register_i as usize + 2, ones)?;
             }
             Instruction::InsFX55(x) => {
                 for index in 0..=x {
-                    self.memory[(self.register_i + index as u16) as usize] =
-                        self.register_v[index as usize];
+                    let address = self.register_i as usize + index as usize;
+                    self.write_memory(address, self.register_v[index as usize])?;
                 }
-                self.register_i += x as u16 + 1;
+                self.register_i = self.register_i.wrapping_add(x as u16 + 1);
             }
             Instruction::InsFX65(x) => {
                 for index in 0..=x {
-                    self.register_v[index as usize] =
-                        self.memory[(self.register_i + index as u16) as usize];
+                    let address = self.register_i as usize + index as usize;
+                    self.register_v[index as usize] = self.read_memory(address)?;
                 }
-                self.register_i += x as u16 + 1;
+                self.register_i = self.register_i.wrapping_add(x as u16 + 1);
             }
         }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn new_chip8() -> Chip8<core::iter::Repeat<u16>> {
+        Chip8::new(core::iter::repeat(0))
+    }
+
+    #[test]
+    fn load_rom_rejects_too_large_buffer() {
+        let mut chip8 = new_chip8();
+        let buffer = [0_u8; MEMORY_SIZE - ROM_START + 1];
+        assert_eq!(
+            chip8.load_rom(&buffer),
+            Err(InstructionError::RomTooLarge {
+                rom_size: buffer.len(),
+                max_size: MEMORY_SIZE - ROM_START,
+            })
+        );
+    }
+
+    #[test]
+    fn fetch_opcode_rejects_out_of_bounds_program_counter() {
+        let mut chip8 = new_chip8();
+        chip8.program_counter = (MEMORY_SIZE - 1) as u16;
+        assert_eq!(
+            chip8.fetch_opcode(),
+            Err(InstructionError::ProgramCounterOutOfBounds(
+                chip8.program_counter
+            ))
+        );
+    }
+
+    #[test]
+    fn execute_00ee_rejects_stack_underflow() {
+        let mut chip8 = new_chip8();
+        assert_eq!(
+            chip8.execute_instruction(&Instruction::Ins00EE),
+            Err(InstructionError::StackUnderflow)
+        );
+    }
+
+    #[test]
+    fn execute_2nnn_rejects_stack_overflow() {
+        let mut chip8 = new_chip8();
+        chip8.stack_pointer = STACK_SIZE as u8;
+        assert_eq!(
+            chip8.execute_instruction(&Instruction::Ins2NNN(0x300)),
+            Err(InstructionError::StackOverflow)
+        );
+    }
+
+    #[test]
+    fn execute_ex9e_rejects_invalid_key_index() {
+        let mut chip8 = new_chip8();
+        chip8.register_v[1] = 0xFF;
+        assert_eq!(
+            chip8.execute_instruction(&Instruction::InsEX9E(1)),
+            Err(InstructionError::InvalidKeyIndex(0xFF))
+        );
+    }
+
+    #[test]
+    fn execute_fx33_rejects_out_of_bounds_memory_write() {
+        let mut chip8 = new_chip8();
+        chip8.register_i = (MEMORY_SIZE - 1) as u16;
+        chip8.register_v[0] = 255;
+        assert_eq!(
+            chip8.execute_instruction(&Instruction::InsFX33(0)),
+            Err(InstructionError::MemoryOutOfBounds(MEMORY_SIZE))
+        );
     }
 }
