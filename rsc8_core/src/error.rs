@@ -1,3 +1,4 @@
+#[derive(PartialEq, Eq)]
 pub enum InstructionError {
     UnknownOpcode(u16),
 }
