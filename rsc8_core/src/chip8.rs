@@ -346,7 +346,9 @@ where
                     .wrapping_add(self.register_v[x as usize] as u16);
             }
             Instruction::InsFX29(x) => {
-                self.register_i = (self.register_v[x as usize] * 5) as u16;
+                // Only the low nibble names a character, as on the original
+                // hardware. Anything larger used to overflow the u8 multiply.
+                self.register_i = (self.register_v[x as usize] as u16 & 0xF) * 5;
             }
             Instruction::InsFX33(x) => {
                 let hundreds = self.register_v[x as usize] / 100;
@@ -435,6 +437,21 @@ mod tests {
             chip8.execute_instruction(&Instruction::InsEX9E(1)),
             Err(InstructionError::InvalidKeyIndex(0xFF))
         );
+    }
+
+    #[test]
+    fn execute_fx29_uses_only_the_low_nibble_and_never_overflows() {
+        let mut chip8 = new_chip8();
+        chip8.register_v[3] = 0xA;
+        assert_eq!(chip8.execute_instruction(&Instruction::InsFX29(3)), Ok(()));
+        assert_eq!(chip8.register_i, 0xA * 5);
+        // 0x7A is 122, and 122 * 5 does not fit a u8. Its low nibble is 0xA.
+        chip8.register_v[3] = 0x7A;
+        assert_eq!(chip8.execute_instruction(&Instruction::InsFX29(3)), Ok(()));
+        assert_eq!(chip8.register_i, 0xA * 5);
+        chip8.register_v[3] = 0xFF;
+        assert_eq!(chip8.execute_instruction(&Instruction::InsFX29(3)), Ok(()));
+        assert_eq!(chip8.register_i, 0xF * 5);
     }
 
     #[test]
