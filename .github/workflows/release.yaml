@@ -1,12 +1,34 @@
 on:
-  release:
-    types: [created]
+  push:
+    tags: ["v*"]
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: write
+  actions: read
 jobs:
-  release:
-    name: Release - ${{ matrix.platform.os-name }}
+  check:
+    name: Check version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Tag matches the Cargo.toml versions
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          for manifest in rsc8_core/Cargo.toml rsc8_tui/Cargo.toml; do
+            actual=$(awk -F'"' '/^version = /{print $2; exit}' "$manifest")
+            if [ "$actual" != "$version" ]; then
+              echo "::error::$manifest has version $actual, expected $version"
+              exit 1
+            fi
+          done
+  build:
+    name: Build - ${{ matrix.platform.os-name }}
+    needs: check
     strategy:
+      fail-fast: false
       matrix:
         platform:
           - os-name: linux-x86_64
@@ -18,10 +40,13 @@ jobs:
           - os-name: macos-x86_64
             runs-on: macos-latest
             target: x86_64-apple-darwin
+          - os-name: macos-aarch64
+            runs-on: macos-latest
+            target: aarch64-apple-darwin
     runs-on: ${{ matrix.platform.runs-on }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Build binary
         uses: houseabsolute/actions-rust-cross@v1
         with:
@@ -29,9 +54,23 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: "--locked --release"
           strip: true
-      - name: Publish artifacts and release
-        uses: houseabsolute/actions-rust-release@v0
+      - name: Package binary
+        uses: houseabsolute/actions-rust-release@v1
         with:
           executable-name: rsc8_tui
           target: ${{ matrix.platform.target }}
           changes-file: ""
+  publish:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Publish release
+        uses: houseabsolute/actions-rust-release/publish@v1
+        with:
+          executable-name: rsc8_tui
+          changes-file: ""
+          generate-release-notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}

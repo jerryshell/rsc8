@@ -2,8 +2,14 @@ use crate::error::InstructionError;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Instruction {
+    Ins00CN(u8),
+    Ins00DN(u8),
     Ins00E0,
     Ins00EE,
+    Ins00FB,
+    Ins00FC,
+    Ins00FE,
+    Ins00FF,
     Ins1NNN(u16),
     Ins2NNN(u16),
     Ins3XNN(u8, u8),
@@ -51,10 +57,22 @@ impl TryFrom<u16> for Instruction {
 
         match opcode & 0xF000 {
             0x0000 => match opcode {
+                // 00CN: Scroll display N pixels down
+                0x00C0..=0x00CF => Ok(Instruction::Ins00CN(n)),
+                // 00DN: Scroll display N pixels up
+                0x00D0..=0x00DF => Ok(Instruction::Ins00DN(n)),
                 // 00E0: Clear screen
                 0x00E0 => Ok(Instruction::Ins00E0),
                 // 00EE: Return from subroutine
                 0x00EE => Ok(Instruction::Ins00EE),
+                // 00FB: Scroll display 4 pixels right
+                0x00FB => Ok(Instruction::Ins00FB),
+                // 00FC: Scroll display 4 pixels left
+                0x00FC => Ok(Instruction::Ins00FC),
+                // 00FE: Disable extended screen mode
+                0x00FE => Ok(Instruction::Ins00FE),
+                // 00FF: Enable extended screen mode
+                0x00FF => Ok(Instruction::Ins00FF),
                 _ => Err(InstructionError::UnknownOpcode(opcode)),
             },
             // 1NNN: Jump to NNN
@@ -148,8 +166,14 @@ mod tests {
 
     #[test]
     fn decodes_known_valid_opcodes() {
+        assert_eq!(Instruction::try_from(0x00C3), Ok(Instruction::Ins00CN(0x3)));
+        assert_eq!(Instruction::try_from(0x00DC), Ok(Instruction::Ins00DN(0xC)));
         assert_eq!(Instruction::try_from(0x00E0), Ok(Instruction::Ins00E0));
         assert_eq!(Instruction::try_from(0x00EE), Ok(Instruction::Ins00EE));
+        assert_eq!(Instruction::try_from(0x00FB), Ok(Instruction::Ins00FB));
+        assert_eq!(Instruction::try_from(0x00FC), Ok(Instruction::Ins00FC));
+        assert_eq!(Instruction::try_from(0x00FE), Ok(Instruction::Ins00FE));
+        assert_eq!(Instruction::try_from(0x00FF), Ok(Instruction::Ins00FF));
         assert_eq!(
             Instruction::try_from(0x5120),
             Ok(Instruction::Ins5XY0(0x1, 0x2))
@@ -169,7 +193,7 @@ mod tests {
     #[test]
     fn rejects_opcode_prefixes_that_only_partially_match() {
         for opcode in [
-            0x0010, 0x00FE, 0x5121, 0x9234, 0xE490, 0xEAAE, 0xF22A, 0xF334, 0xFA5A, 0xFB6A,
+            0x0010, 0x00E1, 0x00F0, 0x5121, 0x9234, 0xE490, 0xEAAE, 0xF22A, 0xF334, 0xFA5A, 0xFB6A,
         ] {
             assert_eq!(
                 Instruction::try_from(opcode),

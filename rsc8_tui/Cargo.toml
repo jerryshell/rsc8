@@ -1,9 +1,9 @@
 [package]
 edition = "2024"
+license = "MIT"
 name = "rsc8_tui"
-version = "0.1.1"
+version = "0.2.0"
 
 [dependencies]
-crossterm = "*"
-ratatui = "*"
+ratatui = "0.30"
 rsc8_core = {path = "../rsc8_core"}
