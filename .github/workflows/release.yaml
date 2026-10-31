@@ -17,10 +17,11 @@ jobs:
       - name: Tag matches the Cargo.toml versions
         run: |
           version="${GITHUB_REF_NAME#v}"
+          core="${version%%-*}"
           for manifest in rsc8_core/Cargo.toml rsc8_tui/Cargo.toml; do
             actual=$(awk -F'"' '/^version = /{print $2; exit}' "$manifest")
-            if [ "$actual" != "$version" ]; then
-              echo "::error::$manifest has version $actual, expected $version"
+            if [ "$actual" != "$core" ]; then
+              echo "::error::$manifest has version $actual, expected $core"
               exit 1
             fi
           done
